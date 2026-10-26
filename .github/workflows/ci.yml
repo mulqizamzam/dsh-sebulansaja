@@ -12,6 +12,5 @@ jobs:
         with:
           node-version: 22
       - run: npm test
-      - run: node --check src/index.js
-      - run: node --check src/research.js
+      - run: npm run check
       - run: npm pack --dry-run
