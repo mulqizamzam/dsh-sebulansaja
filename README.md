@@ -1,6 +1,6 @@
 # DSH SebulanSaja
 
-**Recent-source research for DeepSeek-Native Harness.** SebulanSaja runs a bounded discovery pass across public Hacker News, Reddit, and GitHub search endpoints, returning dated source links, source-specific engagement, per-provider status, and explicit research limitations.
+**Recent-source research for DeepSeek-Native Harness.** SebulanSaja runs bounded discovery across public Hacker News, Reddit, and GitHub search endpoints, then helps organize evidence, prioritize sources, compare snapshots, and manage reusable watch profiles.
 
 - **Owner:** `mulqizamzam`
 - **Package:** `dsh-sebulansaja`
@@ -8,8 +8,6 @@
 - **Target DSH:** `>=0.2.1-rc.2 <0.3.0`
 - **Node.js:** `>=22`
 - **Credentials:** none for the included public endpoints
-
-This project is independently implemented. Its code, prompts, assets and documentation were written for this project, rather than imported from another research project.
 
 ## Features
 
@@ -23,23 +21,37 @@ The `research_recent_sources` tool searches three public sources in parallel:
 | Reddit | Public search JSON endpoint | Post title, permalink, date, score/comments summary |
 | GitHub | Public repository search API | Repository, URL, last push, stars, description |
 
-Results are filtered to the requested time window, deduplicated by URL and sorted newest-first. Engagement breaks timestamp ties. A provider failure is reported per source without discarding successful results from other providers.
+Results are filtered to the requested time window, deduplicated by URL and sorted newest-first. Provider failures are reported independently.
 
 ### 2. Evidence Tracker
 
-The `track_research_evidence` tool accepts claims and discovery results, then attaches candidate source links using lexical overlap. Claims can optionally restrict matching to explicit `evidenceUrls`. It reports `evidence_found_review_required` or `no_matching_evidence_found`; it does **not** automatically label claims true, supported, or refuted. Open each source and assess context before reaching a conclusion.
+`track_research_evidence` finds candidate source links for user-supplied claims using lexical overlap. It reports `evidence_found_review_required` or `no_matching_evidence_found`, never an automatic truth verdict.
 
 ### 3. Source Quality & Signal Ranking
 
-The `rank_research_sources` tool orders results using transparent heuristics: likely primary/official source indicators, repository links, freshness, query overlap, and a small secondary engagement signal. Every result includes a `quality.score`, `quality.tier`, `quality.relevance`, and human-readable `quality.reasons`.
-
-Scores are prioritization hints, **not validated credibility scores or proof of truth**. Official domains and repositories can still contain errors. Engagement is not directly comparable across platforms.
+`rank_research_sources` ranks results using heuristics for likely primary sources, freshness, query overlap, and secondary engagement. Results include a score, tier, relevance estimate, and human-readable reasons. Scores are prioritization hints, not validated credibility metrics.
 
 ### 4. Topic Watch & Change Detection
 
-The `compare_research_snapshots` tool compares a previously saved result list with a new one and reports `added`, `removed` (missing from the current search result), and `changed` items. URLs are normalized to reduce false differences from tracking parameters and trailing slashes.
+`compare_research_snapshots` compares prior and current result lists, reporting added items, items missing from the latest result set, and changed fields. The caller must persist and provide the prior snapshot; the tool itself does not schedule jobs or save state.
 
-This is the comparison engine for a topic watch, not a background scheduler: **the caller must save the prior snapshot and invoke the tool again later**. The plugin currently does not persist snapshots or run recurring checks by itself.
+### 5. Source Lineage & Duplicate Detection
+
+`analyze_source_lineage` clusters canonical duplicate URLs and near-duplicate titles, lists likely primary-source candidates, and warns when multiple results may repeat the same story. This helps avoid treating repeated coverage as independent evidence.
+
+The detector is heuristic: it does not compare full article text or trace citations automatically. Different domains do not guarantee independent reporting.
+
+### 6. Claim Verification Matrix
+
+`build_claim_verification_matrix` organizes reviewed evidence for each claim into `supported`, `contradicted`, `mixed`, or `insufficient_evidence`. Evidence entries include a relation, HTTPS URL, source, excerpt, rationale, and optional `independenceGroup`.
+
+**Important:** the caller must review the source and provide the evidence relation. The tool does not browse the URL or independently verify excerpts. The matrix summarizes submitted assessments; it is not an automatic fact-checker.
+
+### 7. Topic Watch Profiles
+
+`manage_topic_watch_profiles` supports `list`, `create`, `update`, `delete`, and `record_run`. A profile stores a query, source selection, lookback window, result limit, desired interval, enabled flag, and optional last-run snapshot.
+
+Profiles are **caller-managed data**. Each operation returns an updated `profiles` array; the caller must save that array to durable storage and invoke checks on its own schedule. This plugin does not currently provide persistent storage or a background scheduler.
 
 ## Installation
 
@@ -49,7 +61,7 @@ This is the comparison engine for a topic watch, not a background scheduler: **t
 dsh plugin --profile web add github:mulqizamzam/dsh-sebulansaja
 ```
 
-For repeatable installs, pin a verified tag (once a release tag has been published):
+For repeatable installs, pin a verified tag after a release tag has been published:
 
 ```sh
 dsh plugin --profile web add github:mulqizamzam/dsh-sebulansaja#v0.1.0
@@ -61,6 +73,7 @@ dsh plugin --profile web add github:mulqizamzam/dsh-sebulansaja#v0.1.0
 git clone https://github.com/mulqizamzam/dsh-sebulansaja.git
 cd dsh-sebulansaja
 npm test
+npm run check
 dsh plugin --profile web add .
 ```
 
@@ -74,9 +87,9 @@ The npm package is **not yet published**. After a registry release is made, inst
 dsh plugin --profile web add dsh-sebulansaja
 ```
 
-## Usage
+## Usage ideas
 
-Ask your agent to research a topic, track candidate evidence for claims, rank results by source quality and relevance, or compare a saved result snapshot with fresh results.
+Ask your agent to research a topic, track candidate evidence for claims, rank results, detect repeated coverage, create a claim verification matrix from reviewed excerpts, compare snapshots, or manage a topic-watch profile.
 
 The `research_recent_sources` tool accepts:
 
@@ -110,14 +123,17 @@ Substitute your profile name for `web` as needed.
 
 ## Configuration and dependencies
 
-No API keys or environment variables are required by the included providers. Network access to their public endpoints is required while a tool call runs. The plugin uses Node's built-in `fetch`, has an eight-second per-provider request timeout, caps response bodies at two megabytes, and makes no automatic retry loop.
+No API keys or environment variables are required by the included providers. Network access to public endpoints is required while a discovery call runs. The plugin uses Node's built-in `fetch`, has an eight-second per-provider request timeout, caps response bodies at two megabytes, and makes no automatic retry loop.
 
 ## Limitations and evidence quality
 
-- This is a discovery tool, not an independent fact-checker. Open source links and verify claims before treating them as facts.
-- Evidence matching is lexical; it does not infer support or contradiction.
+- This is a discovery and evidence-organization tool, not an independent fact-checker. Open source links and verify claims before treating them as facts.
+- Evidence matching and near-duplicate detection use lexical/URL heuristics and can miss relevant matches or produce false positives.
+- Verification statuses depend on evidence relations supplied by a reviewer; the matrix does not fetch or inspect URLs.
+- Source lineage does not prove source independence. Shared citations and syndication require review.
 - Ranking is heuristic and can favor a domain signal incorrectly. Review the reasons and source content.
-- Snapshot differences do not prove that an item was deleted or that a change is important.
+- Snapshot differences do not prove an item was deleted or that a change is substantively important.
+- Topic-watch profiles are not durable unless the caller persists the returned array; interval metadata does not start a scheduler.
 - Provider indexing, rate limits and search syntax constrain coverage. Empty results do not prove that nothing happened.
 - Reddit may rate-limit anonymous queries. GitHub's unauthenticated API has lower rate limits.
 - Engagement numbers are source-specific and must not be compared directly across platforms.
@@ -133,7 +149,7 @@ npm run check
 npm pack --dry-run
 ```
 
-Tests cover input validation, evidence candidate tracking, ranking, and snapshot comparison without making live network requests. They do not replace a DSH runtime smoke test or live provider verification.
+Tests cover input validation, evidence tracking, source ranking, snapshot comparison, lineage clustering, claim matrix summaries, and profile operations without live network requests. They do not replace a DSH runtime smoke test or live provider verification.
 
 ## Troubleshooting
 
