@@ -12,10 +12,10 @@
   "dsh": { "bundle": { "patch": "./cordis.patch.yml" } },
   "scripts": {
     "test": "node --test",
-    "check": "node --check src/index.js && node --check src/research.js && node --check src/features.js && node --test"
+    "check": "node --check src/index.js && node --check src/research.js && node --check src/features.js && node --check src/advanced.js && node --test"
   },
   "repository": { "type": "git", "url": "https://github.com/mulqizamzam/dsh-sebulansaja.git" },
   "bugs": { "url": "https://github.com/mulqizamzam/dsh-sebulansaja/issues" },
   "homepage": "https://github.com/mulqizamzam/dsh-sebulansaja#readme",
-  "keywords": ["dsh-plugin", "deepseek-harness", "research", "hacker-news", "reddit", "github", "evidence-tracking", "source-ranking", "change-detection"]
+  "keywords": ["dsh-plugin", "deepseek-harness", "research", "hacker-news", "reddit", "github", "evidence-tracking", "source-ranking", "change-detection", "source-lineage", "claim-verification", "topic-watch"]
 }
