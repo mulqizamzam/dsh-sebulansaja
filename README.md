@@ -13,6 +13,8 @@ This project is independently implemented. Its code, prompts, assets and documen
 
 ## Features
 
+### 1. Recent-source discovery
+
 The `research_recent_sources` tool searches three public sources in parallel:
 
 | Source | Endpoint | Returned signals |
@@ -23,11 +25,25 @@ The `research_recent_sources` tool searches three public sources in parallel:
 
 Results are filtered to the requested time window, deduplicated by URL and sorted newest-first. Engagement breaks timestamp ties. A provider failure is reported per source without discarding successful results from other providers.
 
+### 2. Evidence Tracker
+
+The `track_research_evidence` tool accepts claims and discovery results, then attaches candidate source links using lexical overlap. Claims can optionally restrict matching to explicit `evidenceUrls`. It reports `evidence_found_review_required` or `no_matching_evidence_found`; it does **not** automatically label claims true, supported, or refuted. Open each source and assess context before reaching a conclusion.
+
+### 3. Source Quality & Signal Ranking
+
+The `rank_research_sources` tool orders results using transparent heuristics: likely primary/official source indicators, repository links, freshness, query overlap, and a small secondary engagement signal. Every result includes a `quality.score`, `quality.tier`, `quality.relevance`, and human-readable `quality.reasons`.
+
+Scores are prioritization hints, **not validated credibility scores or proof of truth**. Official domains and repositories can still contain errors. Engagement is not directly comparable across platforms.
+
+### 4. Topic Watch & Change Detection
+
+The `compare_research_snapshots` tool compares a previously saved result list with a new one and reports `added`, `removed` (missing from the current search result), and `changed` items. URLs are normalized to reduce false differences from tracking parameters and trailing slashes.
+
+This is the comparison engine for a topic watch, not a background scheduler: **the caller must save the prior snapshot and invoke the tool again later**. The plugin currently does not persist snapshots or run recurring checks by itself.
+
 ## Installation
 
 ### From GitHub
-
-The repository is public. Install it into a DSH profile with:
 
 ```sh
 dsh plugin --profile web add github:mulqizamzam/dsh-sebulansaja
@@ -48,7 +64,7 @@ npm test
 dsh plugin --profile web add .
 ```
 
-Prerequisites: Node.js 22 or newer, npm, and a DSH installation compatible with `0.2.1-rc.2`. DSH's plugin command manages bundle installation for the selected profile.
+Prerequisites: Node.js 22 or newer, npm, and a DSH installation compatible with `0.2.1-rc.2`.
 
 ### From npm
 
@@ -60,13 +76,9 @@ dsh plugin --profile web add dsh-sebulansaja
 
 ## Usage
 
-Ask your agent to research a topic, for example:
+Ask your agent to research a topic, track candidate evidence for claims, rank results by source quality and relevance, or compare a saved result snapshot with fresh results.
 
-- “Research DeepSeek Harness developments from the last 14 days.”
-- “Compare recent Hacker News, Reddit, and GitHub signals about local-first AI agents.”
-- “Find recent GitHub projects about agent memory from the last week; show dates and source links.”
-
-The agent can call `research_recent_sources` with:
+The `research_recent_sources` tool accepts:
 
 | Field | Type | Default | Constraints |
 |---|---|---|---|
@@ -75,11 +87,7 @@ The agent can call `research_recent_sources` with:
 | `sources` | array | all three | unique values from `hacker_news`, `reddit`, `github` |
 | `limit` | integer | `10` | 1–20 results per source |
 
-The result includes the exact lookback boundaries, per-source status and error summaries, result titles, URLs, publication timestamps, engagement values, and limitations.
-
 ## Update and remove
-
-Update an installed package through the DSH profile package manager:
 
 ```sh
 dsh plugin --profile web update dsh-sebulansaja
@@ -107,6 +115,9 @@ No API keys or environment variables are required by the included providers. Net
 ## Limitations and evidence quality
 
 - This is a discovery tool, not an independent fact-checker. Open source links and verify claims before treating them as facts.
+- Evidence matching is lexical; it does not infer support or contradiction.
+- Ranking is heuristic and can favor a domain signal incorrectly. Review the reasons and source content.
+- Snapshot differences do not prove that an item was deleted or that a change is important.
 - Provider indexing, rate limits and search syntax constrain coverage. Empty results do not prove that nothing happened.
 - Reddit may rate-limit anonymous queries. GitHub's unauthenticated API has lower rate limits.
 - Engagement numbers are source-specific and must not be compared directly across platforms.
@@ -122,7 +133,7 @@ npm run check
 npm pack --dry-run
 ```
 
-Tests cover input validation without making live network requests. They do not replace a DSH runtime smoke test or live provider verification.
+Tests cover input validation, evidence candidate tracking, ranking, and snapshot comparison without making live network requests. They do not replace a DSH runtime smoke test or live provider verification.
 
 ## Troubleshooting
 
