@@ -6,42 +6,16 @@
   "author": "mulqizamzam",
   "type": "module",
   "main": "./src/index.js",
-  "files": [
-    "src/",
-    "cordis.patch.yml",
-    "README.md",
-    "LICENSE"
-  ],
-  "engines": {
-    "node": ">=22",
-    "dsh": ">=0.2.1-rc.2 <0.3.0"
-  },
-  "peerDependencies": {
-    "@deepseek-ai/dsh-tools": "0.0.1-rc.1"
-  },
-  "dsh": {
-    "bundle": {
-      "patch": "./cordis.patch.yml"
-    }
-  },
+  "files": ["src/", "cordis.patch.yml", "README.md", "LICENSE"],
+  "engines": { "node": ">=22", "dsh": ">=0.2.1-rc.2 <0.3.0" },
+  "peerDependencies": { "@deepseek-ai/dsh-tools": "0.0.1-rc.1" },
+  "dsh": { "bundle": { "patch": "./cordis.patch.yml" } },
   "scripts": {
     "test": "node --test",
-    "check": "node --check src/index.js && node --check src/research.js && node --test"
+    "check": "node --check src/index.js && node --check src/research.js && node --check src/features.js && node --test"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/mulqizamzam/dsh-sebulansaja.git"
-  },
-  "bugs": {
-    "url": "https://github.com/mulqizamzam/dsh-sebulansaja/issues"
-  },
+  "repository": { "type": "git", "url": "https://github.com/mulqizamzam/dsh-sebulansaja.git" },
+  "bugs": { "url": "https://github.com/mulqizamzam/dsh-sebulansaja/issues" },
   "homepage": "https://github.com/mulqizamzam/dsh-sebulansaja#readme",
-  "keywords": [
-    "dsh-plugin",
-    "deepseek-harness",
-    "research",
-    "hacker-news",
-    "reddit",
-    "github"
-  ]
+  "keywords": ["dsh-plugin", "deepseek-harness", "research", "hacker-news", "reddit", "github", "evidence-tracking", "source-ranking", "change-detection"]
 }
